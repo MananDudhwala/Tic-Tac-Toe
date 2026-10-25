@@ -110,6 +110,12 @@ When in Computer Mode:
 8. **Game Mode Toggle**
    - Seamlessly switch between **Two Player Mode** and **Play Against Computer**.
 
+9. **Past Games History Section**
+   - Expandable section beneath the board displaying match history from SQLite.
+   - Shows timestamp, mode badge (2-Player or AI), match outcome badge, and total move count.
+   - "Inspect" button to load and review the completed board of any previous match, with a "Back to Live Game" button to resume.
+   - Live "Refresh" button to fetch recent games from the database on demand.
+
 ---
 
 ## 📡 API Contract & Documentation
@@ -120,6 +126,7 @@ Interactive Swagger documentation is available at `http://localhost:5000/swagger
 
 | Method | Endpoint | Request Body | Description |
 |---|---|---|---|
+| `GET` | `/api/games` | *None* | Retrieves list of past game sessions (history) |
 | `POST` | `/api/games` | `{"gameMode": "TwoPlayer" \| "Computer"}` | Creates a new game session |
 | `GET` | `/api/games/{id}` | *None* | Retrieves current game state |
 | `POST` | `/api/games/{id}/moves` | `{"player": "X", "row": 0, "col": 0}` | Submits a player move (triggers AI if Computer mode) |

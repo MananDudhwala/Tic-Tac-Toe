@@ -40,6 +40,16 @@ public class ScoreboardResponse
     public int Draws { get; set; }
 }
 
+public class GameSummaryResponse
+{
+    public Guid Id { get; set; }
+    public string GameMode { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string? Winner { get; set; }
+    public int MoveCount { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
 public class ErrorResponse
 {
     public string Error { get; set; } = string.Empty;

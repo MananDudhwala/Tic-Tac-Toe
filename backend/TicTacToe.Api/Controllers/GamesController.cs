@@ -16,6 +16,16 @@ public class GamesController : ControllerBase
     }
 
     /// <summary>
+    /// Get list of past games history
+    /// </summary>
+    [HttpGet]
+    public async Task<ActionResult<List<GameSummaryResponse>>> GetPastGames()
+    {
+        var games = await _gameService.GetPastGamesAsync();
+        return Ok(games);
+    }
+
+    /// <summary>
     /// Create a new game session
     /// </summary>
     [HttpPost]

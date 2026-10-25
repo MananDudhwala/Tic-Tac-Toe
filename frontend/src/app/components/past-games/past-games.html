@@ -1,0 +1,83 @@
+<section class="past-games-card" id="past-games-section" aria-label="Past Games History">
+  <div class="past-games-header" (click)="toggleExpand()" role="button" [attr.aria-expanded]="isExpanded" tabindex="0">
+    <div class="header-left">
+      <span class="section-icon">📜</span>
+      <h3 class="section-title">Past Games History</h3>
+      <span class="count-badge" id="past-games-count">{{ games.length }} matches</span>
+    </div>
+
+    <div class="header-actions">
+      <button
+        id="refresh-history-btn"
+        class="refresh-btn"
+        (click)="onRefresh($event)"
+        title="Refresh history from database"
+        [disabled]="isLoading"
+      >
+        <span [class.spinning]="isLoading">🔄</span>
+        <span>Refresh</span>
+      </button>
+
+      <button class="expand-btn" [attr.aria-label]="isExpanded ? 'Collapse section' : 'Expand section'">
+        <span class="chevron" [class.open]="isExpanded">▼</span>
+      </button>
+    </div>
+  </div>
+
+  @if (isExpanded) {
+    <div class="past-games-body">
+      @if (games.length === 0) {
+        <div class="empty-history">
+          <p>No past games recorded yet. Play a game to see match history saved in SQLite!</p>
+        </div>
+      } @else {
+        <div class="table-container">
+          <table class="history-table" id="past-games-table">
+            <thead>
+              <tr>
+                <th>Date & Time</th>
+                <th>Mode</th>
+                <th>Outcome</th>
+                <th>Moves</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (game of games; track game.id) {
+                <tr [class.active-game-row]="game.id === activeGameId">
+                  <td class="date-cell">
+                    {{ game.createdAt | date: 'short' }}
+                    @if (game.id === activeGameId) {
+                      <span class="current-indicator">Current</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="mode-badge" [class.mode-ai]="game.gameMode === 'Computer'" [class.mode-2p]="game.gameMode === 'TwoPlayer'">
+                      {{ game.gameMode === 'Computer' ? '🤖 Computer' : '👥 Two Player' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="result-badge" [ngClass]="getResultClass(game)">
+                      {{ getResultLabel(game) }}
+                    </span>
+                  </td>
+                  <td class="moves-cell">{{ game.moveCount }} moves</td>
+                  <td>
+                    <button
+                      class="view-game-btn"
+                      (click)="onViewGame(game.id)"
+                      [disabled]="game.id === activeGameId"
+                      title="Load and inspect this game's board"
+                    >
+                      {{ game.id === activeGameId ? 'Viewing' : 'Inspect' }}
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+</section>

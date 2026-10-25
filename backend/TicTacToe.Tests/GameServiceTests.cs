@@ -574,4 +574,18 @@ public class GameServiceTests : IDisposable
             state.MoveHistory.Last().Player.Should().Be("O");
         }
     }
+
+    [Fact]
+    public async Task GetPastGames_ReturnsCreatedGamesList()
+    {
+        await _gameService.CreateGameAsync("TwoPlayer");
+        await _gameService.CreateGameAsync("Computer");
+
+        var pastGames = await _gameService.GetPastGamesAsync();
+
+        pastGames.Should().NotBeNull();
+        pastGames.Count.Should().BeGreaterOrEqualTo(2);
+        pastGames.Should().Contain(g => g.GameMode == "TwoPlayer");
+        pastGames.Should().Contain(g => g.GameMode == "Computer");
+    }
 }

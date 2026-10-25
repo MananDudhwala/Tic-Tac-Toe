@@ -197,6 +197,25 @@
   letter-spacing: -0.01em;
 }
 
+.return-live-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.return-live-btn:hover {
+  background: rgba(99, 102, 241, 0.4);
+  transform: translateY(-1px);
+}
+
 /* Game Layout Grid */
 .game-layout {
   display: grid;

@@ -172,6 +172,24 @@ public class GameService : IGameService
         return await BuildResponseAsync(game);
     }
 
+    public async Task<List<GameSummaryResponse>> GetPastGamesAsync()
+    {
+        return await _db.Games
+            .Include(g => g.Moves)
+            .OrderByDescending(g => g.CreatedAt)
+            .Take(30)
+            .Select(g => new GameSummaryResponse
+            {
+                Id = g.Id,
+                GameMode = g.GameMode,
+                Status = g.Status,
+                Winner = g.Winner,
+                MoveCount = g.Moves.Count,
+                CreatedAt = g.CreatedAt
+            })
+            .ToListAsync();
+    }
+
     // --- Private helpers ---
 
     private async Task<Game> LoadGameAsync(Guid gameId)

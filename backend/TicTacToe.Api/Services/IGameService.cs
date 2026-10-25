@@ -9,4 +9,5 @@ public interface IGameService
     Task<GameResponse> MakeMoveAsync(Guid gameId, MoveRequest request);
     Task<GameResponse> UndoMoveAsync(Guid gameId);
     Task<GameResponse> ResetGameAsync(Guid gameId);
+    Task<List<GameSummaryResponse>> GetPastGamesAsync();
 }

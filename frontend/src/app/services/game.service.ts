@@ -6,6 +6,7 @@ import {
   CreateGameRequest,
   MoveRequest,
   ScoreboardResponse,
+  GameSummaryResponse,
 } from '../models/game.model';
 
 @Injectable({
@@ -61,5 +62,9 @@ export class GameService {
       `${this.apiUrl}/scoreboard/reset`,
       {}
     );
+  }
+
+  getPastGames(): Observable<GameSummaryResponse[]> {
+    return this.http.get<GameSummaryResponse[]>(`${this.apiUrl}/games`);
   }
 }

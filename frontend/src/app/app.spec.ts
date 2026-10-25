@@ -42,6 +42,16 @@ describe('App', () => {
       resetGame: vi.fn().mockReturnValue(of(initialGame)),
       getScoreboard: vi.fn().mockReturnValue(of({ xWins: 0, oWins: 0, draws: 0 })),
       resetScoreboard: vi.fn().mockReturnValue(of({ xWins: 0, oWins: 0, draws: 0 })),
+      getPastGames: vi.fn().mockReturnValue(of([
+        {
+          id: 'past-game-1',
+          gameMode: 'TwoPlayer',
+          status: 'Won',
+          winner: 'X',
+          moveCount: 5,
+          createdAt: new Date().toISOString(),
+        },
+      ])),
     };
 
     await TestBed.configureTestingModule({
@@ -131,5 +141,22 @@ describe('App', () => {
 
     app.undoMove();
     expect(mockGameService.undoMove).toHaveBeenCalledWith('test-game-id');
+  });
+
+  it('should load past games on init', () => {
+    expect(mockGameService.getPastGames).toHaveBeenCalled();
+    expect(app.pastGames().length).toBe(1);
+  });
+
+  it('should inspect past game and update view state', () => {
+    app.inspectPastGame('past-game-1');
+    expect(mockGameService.getGame).toHaveBeenCalledWith('past-game-1');
+    expect(app.isViewingArchived()).toBe(true);
+  });
+
+  it('should return to live game from archive view', () => {
+    app.isViewingArchived.set(true);
+    app.returnToLiveGame();
+    expect(app.isViewingArchived()).toBe(false);
   });
 });

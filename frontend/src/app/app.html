@@ -63,6 +63,11 @@
           </span>
         }
         <span id="turn-indicator" class="status-text">{{ turnMessage }}</span>
+        @if (isViewingArchived()) {
+          <button id="return-live-btn" class="return-live-btn" (click)="returnToLiveGame()">
+            <span>◀ Back to Live Game</span>
+          </button>
+        }
       </div>
       @if (isLoading()) {
         <span class="spinner" aria-label="Processing move"></span>
@@ -79,7 +84,7 @@
           <app-board
             [board]="g.board"
             [winningCells]="g.winningCells"
-            [disabled]="isLoading() || g.status !== 'InProgress'"
+            [disabled]="isLoading() || g.status !== 'InProgress' || isViewingArchived()"
             (cellClick)="onCellClick($event)"
           ></app-board>
         } @else {
@@ -135,4 +140,13 @@
       }
     </aside>
   </div>
+
+  <!-- Dedicated Past Games History Section -->
+  <app-past-games
+    [games]="pastGames()"
+    [activeGameId]="game()?.id || null"
+    [isLoading]="isHistoryLoading()"
+    (viewGame)="inspectPastGame($event)"
+    (refresh)="loadPastGames()"
+  ></app-past-games>
 </main>

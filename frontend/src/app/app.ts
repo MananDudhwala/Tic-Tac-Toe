@@ -1,10 +1,11 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GameService } from './services/game.service';
-import { GameResponse, ScoreboardResponse } from './models/game.model';
+import { GameResponse, GameSummaryResponse, ScoreboardResponse } from './models/game.model';
 import { BoardComponent } from './components/board/board';
 import { ScoreboardComponent } from './components/scoreboard/scoreboard';
 import { MoveHistoryComponent } from './components/move-history/move-history';
+import { PastGamesComponent } from './components/past-games/past-games';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +15,7 @@ import { MoveHistoryComponent } from './components/move-history/move-history';
     BoardComponent,
     ScoreboardComponent,
     MoveHistoryComponent,
+    PastGamesComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
@@ -24,21 +26,43 @@ export class App implements OnInit {
   isLoading = signal<boolean>(false);
   errorMessage = signal<string | null>(null);
 
+  // Past games state
+  pastGames = signal<GameSummaryResponse[]>([]);
+  isHistoryLoading = signal<boolean>(false);
+  activeLiveGameId = signal<string | null>(null);
+  isViewingArchived = signal<boolean>(false);
+
   constructor(private gameService: GameService) {}
 
   ngOnInit(): void {
     this.startNewGame(this.selectedMode());
   }
 
+  loadPastGames(): void {
+    this.isHistoryLoading.set(true);
+    this.gameService.getPastGames().subscribe({
+      next: (games) => {
+        this.pastGames.set(games);
+        this.isHistoryLoading.set(false);
+      },
+      error: () => {
+        this.isHistoryLoading.set(false);
+      },
+    });
+  }
+
   startNewGame(mode: 'TwoPlayer' | 'Computer'): void {
     this.isLoading.set(true);
     this.errorMessage.set(null);
     this.selectedMode.set(mode);
+    this.isViewingArchived.set(false);
 
     this.gameService.createGame(mode).subscribe({
       next: (response) => {
         this.game.set(response);
+        this.activeLiveGameId.set(response.id);
         this.isLoading.set(false);
+        this.loadPastGames();
       },
       error: (err) => {
         this.isLoading.set(false);
@@ -51,7 +75,7 @@ export class App implements OnInit {
 
   onCellClick(event: { row: number; col: number }): void {
     const currentGame = this.game();
-    if (!currentGame || this.isLoading() || currentGame.status !== 'InProgress') {
+    if (!currentGame || this.isLoading() || currentGame.status !== 'InProgress' || this.isViewingArchived()) {
       return;
     }
 
@@ -64,6 +88,9 @@ export class App implements OnInit {
         next: (updatedGame) => {
           this.game.set(updatedGame);
           this.isLoading.set(false);
+          if (updatedGame.status !== 'InProgress') {
+            this.loadPastGames();
+          }
         },
         error: (err) => {
           this.isLoading.set(false);
@@ -74,7 +101,7 @@ export class App implements OnInit {
 
   get isUndoDisabled(): boolean {
     const currentGame = this.game();
-    if (!currentGame || this.isLoading() || currentGame.moveHistory.length === 0) {
+    if (!currentGame || this.isLoading() || currentGame.moveHistory.length === 0 || this.isViewingArchived()) {
       return true;
     }
     // Only allow undo after game completion in Computer mode
@@ -97,6 +124,7 @@ export class App implements OnInit {
       next: (updatedGame) => {
         this.game.set(updatedGame);
         this.isLoading.set(false);
+        this.loadPastGames();
       },
       error: (err) => {
         this.isLoading.set(false);
@@ -113,11 +141,13 @@ export class App implements OnInit {
 
     this.isLoading.set(true);
     this.errorMessage.set(null);
+    this.isViewingArchived.set(false);
 
-    this.gameService.resetGame(currentGame.id).subscribe({
+    this.gameService.resetGame(this.activeLiveGameId() || currentGame.id).subscribe({
       next: (updatedGame) => {
         this.game.set(updatedGame);
         this.isLoading.set(false);
+        this.loadPastGames();
       },
       error: (err) => {
         this.isLoading.set(false);
@@ -151,13 +181,60 @@ export class App implements OnInit {
   }
 
   switchMode(mode: 'TwoPlayer' | 'Computer'): void {
-    if (this.selectedMode() === mode) return;
+    if (this.selectedMode() === mode && !this.isViewingArchived()) return;
     this.startNewGame(mode);
+  }
+
+  inspectPastGame(gameId: string): void {
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+
+    this.gameService.getGame(gameId).subscribe({
+      next: (archivedGame) => {
+        this.game.set(archivedGame);
+        this.isViewingArchived.set(true);
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        this.isLoading.set(false);
+        this.errorMessage.set(err.error?.error || 'Failed to load past game.');
+      },
+    });
+  }
+
+  returnToLiveGame(): void {
+    const liveId = this.activeLiveGameId();
+    if (!liveId) {
+      this.startNewGame(this.selectedMode());
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.gameService.getGame(liveId).subscribe({
+      next: (liveGame) => {
+        this.game.set(liveGame);
+        this.isViewingArchived.set(false);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.startNewGame(this.selectedMode());
+      },
+    });
   }
 
   get turnMessage(): string {
     const g = this.game();
     if (!g) return 'Loading game...';
+
+    if (this.isViewingArchived()) {
+      if (g.status === 'Won') {
+        return `📜 Archive View: ${g.winner === 'X' ? 'Player X' : (g.gameMode === 'Computer' ? 'Computer' : 'Player O')} Won`;
+      }
+      if (g.status === 'Draw') {
+        return '📜 Archive View: Game ended in a Draw';
+      }
+      return '📜 Archive View: Game In Progress';
+    }
 
     if (g.status === 'Won') {
       if (g.gameMode === 'Computer') {

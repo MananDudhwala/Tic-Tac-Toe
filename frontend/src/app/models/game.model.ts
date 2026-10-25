@@ -33,6 +33,15 @@ export interface MoveRequest {
   col: number;
 }
 
+export interface GameSummaryResponse {
+  id: string;
+  gameMode: string;
+  status: string;
+  winner: string | null;
+  moveCount: number;
+  createdAt: string;
+}
+
 export interface ErrorResponse {
   error: string;
 }
