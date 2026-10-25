@@ -47,7 +47,12 @@ public class GameSummaryResponse
     public string Status { get; set; } = string.Empty;
     public string? Winner { get; set; }
     public int MoveCount { get; set; }
-    public DateTime CreatedAt { get; set; }
+    private DateTime _createdAt;
+    public DateTime CreatedAt
+    {
+        get => _createdAt;
+        set => _createdAt = DateTime.SpecifyKind(value, DateTimeKind.Utc);
+    }
 }
 
 public class ErrorResponse

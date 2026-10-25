@@ -46,7 +46,7 @@
               @for (game of games; track game.id) {
                 <tr [class.active-game-row]="game.id === activeGameId">
                   <td class="date-cell">
-                    {{ game.createdAt | date: 'short' }}
+                    {{ formatDate(game.createdAt) }}
                     @if (game.id === activeGameId) {
                       <span class="current-indicator">Current</span>
                     }

@@ -1,11 +1,11 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { GameSummaryResponse } from '../../models/game.model';
 
 @Component({
   selector: 'app-past-games',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule],
   templateUrl: './past-games.html',
   styleUrl: './past-games.css',
 })
@@ -48,5 +48,24 @@ export class PastGamesComponent {
     }
     if (game.status === 'Draw') return '🤝 Draw';
     return '⏳ In Progress';
+  }
+
+  formatDate(dateStr: string): string {
+    if (!dateStr) return '';
+    // Normalize to UTC ISO string if timezone indicator is missing
+    const normalized = (!dateStr.endsWith('Z') && !dateStr.includes('+')) 
+      ? dateStr + 'Z' 
+      : dateStr;
+    const date = new Date(normalized);
+    if (isNaN(date.getTime())) return dateStr;
+
+    return date.toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+    });
   }
 }
