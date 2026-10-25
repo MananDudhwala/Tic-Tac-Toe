@@ -58,10 +58,9 @@ The database uses EF Core with SQLite:
 - **`Moves` table**: Relational child table with `MoveNumber`, `Player`, `Row`, `Col`, and foreign key `GameId` (cascade delete).
 - **`Scoreboards` table**: Singleton record (`Id = 1`) tracking `XWins`, `OWins`, and `Draws`.
 
-### 3. Undo Strategy: Option B (Scoreboard Adjusts on Undo)
-Per the problem statement options:
-- **Option B is implemented**: Players can undo moves even after a game has concluded in a win or draw.
-- If a winning or drawing move is undone, the game status transitions back to `InProgress`, winning highlights are cleared, and the scoreboard count is decremented accordingly to maintain strict consistency.
+### 3. Undo Strategy: Mode-Specific Completion Rules
+- **Two Player Mode (Option A after completion)**: Once a game is won or drawn in Two Player mode, Undo is disabled. The result is final and the scoreboard remains unchanged.
+- **Computer Mode (Option B after completion)**: In Computer Mode, Undo is allowed even after game completion. If the user undos, both the computer's last move and the player's winning/finishing move are reverted, the game status returns to `InProgress`, and the scoreboard count is automatically decremented.
 
 ### 4. Computer Move Mechanics
 When in Computer Mode:
@@ -254,7 +253,7 @@ The computer player (`O`) selects moves using the priority rules outlined in the
 ## 🔍 Clarifications & Assumptions
 
 1. **Storage Choice**: SQLite via Entity Framework Core was chosen instead of in-memory storage to ensure durability across server restarts. The database file `tictactoe.db` is stored locally in the backend directory.
-2. **Undo After Completion**: Option B was selected. If a user undos a winning move, the win is canceled, status returns to `InProgress`, and the scoreboard count is decremented.
+2. **Undo After Completion**: In Two Player Mode, Undo is disabled after game completion (Option A). In Computer Mode, Undo is permitted after game completion (Option B), reversing the final moves and decrementing the scoreboard.
 3. **Session vs Persistent Scoreboard**: The scoreboard is maintained in SQLite as a singleton entity. It persists across games and can be reset at any time via the "Reset Scoreboard" button.
 4. **Computer Mode Human Mark**: In Computer Mode, the human is always Player `X` (moves first), and the computer is Player `O`.
 

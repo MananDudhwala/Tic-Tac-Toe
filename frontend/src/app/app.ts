@@ -72,11 +72,23 @@ export class App implements OnInit {
       });
   }
 
-  undoMove(): void {
+  get isUndoDisabled(): boolean {
     const currentGame = this.game();
     if (!currentGame || this.isLoading() || currentGame.moveHistory.length === 0) {
+      return true;
+    }
+    // Only allow undo after game completion in Computer mode
+    if (currentGame.status !== 'InProgress' && currentGame.gameMode !== 'Computer') {
+      return true;
+    }
+    return false;
+  }
+
+  undoMove(): void {
+    if (this.isUndoDisabled) {
       return;
     }
+    const currentGame = this.game()!;
 
     this.isLoading.set(true);
     this.errorMessage.set(null);

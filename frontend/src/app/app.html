@@ -96,7 +96,7 @@
           id="undo-btn"
           class="btn btn-secondary"
           (click)="undoMove()"
-          [disabled]="isLoading() || !game() || game()!.moveHistory.length === 0"
+          [disabled]="isUndoDisabled"
           title="Undo the last move"
         >
           <span class="btn-icon">↩</span>

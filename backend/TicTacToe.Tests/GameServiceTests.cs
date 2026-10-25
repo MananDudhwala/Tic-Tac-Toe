@@ -396,25 +396,48 @@ public class GameServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task Scoreboard_AdjustsOnUndoAfterWin()
+    public async Task UndoMove_TwoPlayerMode_AfterGameCompleted_ThrowsInvalidOperation()
     {
         var game = await _gameService.CreateGameAsync("TwoPlayer");
 
-        // X wins
+        // X wins with top row
         await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "X", Row = 0, Col = 0 });
         await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "O", Row = 1, Col = 0 });
         await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "X", Row = 0, Col = 1 });
         await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "O", Row = 1, Col = 1 });
         await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "X", Row = 0, Col = 2 });
 
-        var scoreBefore = await _scoreboardService.GetScoreboardAsync();
-        scoreBefore.XWins.Should().Be(1);
+        var act = () => _gameService.UndoMoveAsync(game.Id);
 
-        // Undo winning move
-        await _gameService.UndoMoveAsync(game.Id);
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*not allowed after game completion*");
+    }
+
+    [Fact]
+    public async Task Scoreboard_AdjustsOnUndoAfterWin_ComputerMode()
+    {
+        var game = await _gameService.CreateGameAsync("Computer");
+
+        // 1. Human plays X at (0, 0), computer takes center (1, 1)
+        await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "X", Row = 0, Col = 0 });
+        // 2. Human plays X at (0, 1), computer blocks at (0, 2)
+        await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "X", Row = 0, Col = 1 });
+        // 3. Human plays X at (1, 0), computer has (1,1) and (0,2), so it completes anti-diagonal at (2,0) and wins!
+        var afterWin = await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "X", Row = 1, Col = 0 });
+
+        afterWin.Status.Should().Be("Won");
+        afterWin.Winner.Should().Be("O");
+
+        var scoreBefore = await _scoreboardService.GetScoreboardAsync();
+        scoreBefore.OWins.Should().Be(1);
+
+        // Undo move pair after game completion (allowed in Computer mode)
+        var afterUndo = await _gameService.UndoMoveAsync(game.Id);
+        afterUndo.Status.Should().Be("InProgress");
+        afterUndo.Winner.Should().BeNull();
 
         var scoreAfter = await _scoreboardService.GetScoreboardAsync();
-        scoreAfter.XWins.Should().Be(0);
+        scoreAfter.OWins.Should().Be(0);
     }
 
     [Fact]

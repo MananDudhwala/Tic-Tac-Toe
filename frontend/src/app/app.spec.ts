@@ -101,4 +101,35 @@ describe('App', () => {
     expect(app.selectedMode()).toBe('Computer');
     expect(mockGameService.createGame).toHaveBeenCalledWith('Computer');
   });
+
+  it('should disable undo after game completion in TwoPlayer mode', () => {
+    app.game.set({
+      ...initialGame,
+      gameMode: 'TwoPlayer',
+      status: 'Won',
+      winner: 'X',
+      moveHistory: [{ moveNumber: 1, player: 'X', row: 0, col: 0 }],
+    });
+    expect(app.isUndoDisabled).toBe(true);
+
+    app.undoMove();
+    expect(mockGameService.undoMove).not.toHaveBeenCalled();
+  });
+
+  it('should allow undo after game completion in Computer mode', () => {
+    app.game.set({
+      ...initialGame,
+      gameMode: 'Computer',
+      status: 'Won',
+      winner: 'X',
+      moveHistory: [
+        { moveNumber: 1, player: 'X', row: 0, col: 0 },
+        { moveNumber: 2, player: 'O', row: 1, col: 1 },
+      ],
+    });
+    expect(app.isUndoDisabled).toBe(false);
+
+    app.undoMove();
+    expect(mockGameService.undoMove).toHaveBeenCalledWith('test-game-id');
+  });
 });

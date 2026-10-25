@@ -96,6 +96,9 @@ public class GameService : IGameService
         if (!game.Moves.Any())
             throw new InvalidOperationException("No moves to undo.");
 
+        if (game.Status != "InProgress" && game.GameMode != "Computer")
+            throw new InvalidOperationException("Undo is not allowed after game completion in Two Player mode.");
+
         // Track if we need to adjust scoreboard
         string? previousStatus = game.Status;
         string? previousWinner = game.Winner;
