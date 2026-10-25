@@ -268,6 +268,8 @@ The computer player (`O`) selects moves using the priority rules outlined in the
 
 ## 🤖 AI Workflow & Prompt Summary
 
+> 📘 **Full AI Engineering Notes**: For a comprehensive phase-by-phase breakdown, prompt engineering strategies, division of labor analysis, and productivity metrics, see the dedicated [AI_WORKFLOW_NOTES.md](file:///Users/manandudhwala/Desktop/personal/Tic-Tac-Toe/AI_WORKFLOW_NOTES.md).
+
 ### Conversion of Requirements into Specification
 1. Analyzed functional requirements and mapped them into discrete domain models (`Game`, `Move`, `Scoreboard`).
 2. Drafted a contract-first REST API specification matching the required endpoints.
@@ -288,7 +290,45 @@ The computer player (`O`) selects moves using the priority rules outlined in the
 
 ## 🔮 Known Limitations & Future Improvements
 
-- **Difficulty Levels**: Currently, the computer opponent uses a fixed heuristic. Future improvements could include configurable difficulty (Easy / Medium / Unbeatable Minimax).
-- **Multiplayer Online**: Introduce WebSockets / SignalR for real-time multiplayer over the network instead of local hot-seat play.
-- **Sound Effects**: Add optional Web Audio API sound effects for cell placement, undo, victory, and draw.
-- **Custom Player Names**: Allow players to customize display names for X and O.
+### 1. 🧠 AI & Game Logic
+- **Heuristic AI vs. Unbeatable Minimax**:
+  - The computer opponent uses a rule-based priority heuristic (*Win ➔ Block ➔ Center ➔ Corners ➔ First Open Cell*).
+  - While strong against casual play, it is **not mathematically unbeatable**—a player can defeat it using a double-fork trap (e.g., opposite-corner openings like `(0,0)` and `(2,2)`). An optimal Minimax algorithm with alpha-beta pruning would eliminate all loss states.
+- **Single Fixed Difficulty**:
+  - The AI behavior is fixed; there is no option to choose between Easy (random moves), Medium (current heuristic), or Impossible (Minimax).
+- **Hardcoded Symbols & Turn Order**:
+  - In Computer mode, the human is always `X` (first turn) and the AI is always `O` (second turn). The player cannot select their symbol or allow the computer to move first.
+- **Fixed 3x3 Board Size**:
+  - The grid is hardcoded to 3x3 with a 3-in-a-row win condition. Configurable dimensions (e.g., 4x4 or 5x5 with Connect-4-style mechanics) are not supported.
+
+### 2. 📊 Scoreboard & State Persistence
+- **Global Singleton Scoreboard**:
+  - The scoreboard is stored as a single global row (`Id = 1`) in SQLite. It aggregates wins and draws across **both** Two-Player and Computer modes together rather than tracking separate tallies per game mode.
+- **Scoreboard Reset Scope vs. Past Games**:
+  - Clicking **Reset Scoreboard** resets the numeric counters (`xWins: 0, oWins: 0, draws: 0`), but **does not delete past match history** from the `Games` table. The "Past Games" list continues to display previously finished games.
+- **Denormalized Counters**:
+  - Scores are stored as raw incremented/decremented integer columns rather than dynamically aggregated from the `Games` table (`SELECT COUNT(*) WHERE Winner = 'X'`). If an external database modification occurs, the counters could drift from match history.
+- **Single-Tenant / Shared Instance**:
+  - All browser sessions hitting the backend share the exact same scoreboard and database records.
+
+### 3. 🌐 Multiplayer & Networking
+- **Local "Hot-Seat" Play Only**:
+  - Two-player mode requires both players to share the same physical screen and mouse/keyboard.
+- **No Real-Time Online Play**:
+  - No WebSockets / SignalR implementation or lobby system for matchmaking and real-time network multiplayer across different devices.
+- **No Authentication or Player Profiles**:
+  - No user accounts, custom player handles, or persistent user profiles/win rates.
+
+### 4. ⚙️ Architecture & Concurrency
+- **Database Scalability (SQLite)**:
+  - Uses a local SQLite file (`tictactoe.db`). While fast and zero-configuration for local use, SQLite utilizes database-level write locks and cannot horizontally scale across multiple containerized backend instances without switching to a client-server RDBMS (e.g., PostgreSQL or SQL Server).
+- **Optimistic Concurrency**:
+  - The `Games` table lacks a `RowVersion` / concurrency token, meaning rapid concurrent move submissions for the same game session could encounter race conditions.
+
+### 5. 🎨 UI, UX & Accessibility
+- **Keyboard Board Navigation**:
+  - While buttons and ARIA labels are accessible, the 3x3 game grid cannot be navigated using keyboard arrow keys (currently requires mouse/touch clicks or sequential Tab stops).
+- **Audio Feedback**:
+  - No Web Audio sound effects or haptic cues for placing marks, undoing moves, winning, or drawing.
+- **Asymmetric Post-Game Undo Behavior**:
+  - Two-Player mode disables Undo once a match concludes (Option A), while Computer mode permits Undo after game completion (Option B). While intentional by design, this difference in behavior can be unexpected for some users.
