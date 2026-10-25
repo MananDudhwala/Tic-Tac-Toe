@@ -1,0 +1,17 @@
+<div class="board" id="game-board">
+  @for (row of board; track $index; let r = $index) {
+    @for (cell of row; track $index; let c = $index) {
+      <button
+        [id]="'cell-' + r + '-' + c"
+        [class]="getCellClass(r, c)"
+        [disabled]="disabled || cell !== ''"
+        (click)="onCellClick(r, c)"
+        [attr.aria-label]="'Row ' + (r + 1) + ', Column ' + (c + 1) + (cell ? ': ' + cell : ': Empty')"
+      >
+        @if (cell) {
+          <span class="cell-value" [class.x-mark]="cell === 'X'" [class.o-mark]="cell === 'O'">{{ cell }}</span>
+        }
+      </button>
+    }
+  }
+</div>

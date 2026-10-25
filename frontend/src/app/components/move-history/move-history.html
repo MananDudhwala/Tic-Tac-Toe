@@ -1,0 +1,31 @@
+<div class="move-history" id="move-history">
+  <h3 class="history-title">Move History</h3>
+  @if (moves.length === 0) {
+    <div class="empty-state">No moves yet</div>
+  } @else {
+    <div class="history-table-wrapper">
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Player</th>
+            <th>Position</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (move of moves; track move.moveNumber) {
+            <tr [class.row-x]="move.player === 'X'" [class.row-o]="move.player === 'O'">
+              <td>{{ move.moveNumber }}</td>
+              <td>
+                <span class="player-badge" [class.badge-x]="move.player === 'X'" [class.badge-o]="move.player === 'O'">
+                  {{ move.player }}
+                </span>
+              </td>
+              <td>Row {{ move.row + 1 }}, Col {{ move.col + 1 }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

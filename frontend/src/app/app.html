@@ -1,0 +1,138 @@
+<main class="app-container">
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-badge">Full-Stack .NET & Angular</div>
+    <h1 class="header-title">Tic Tac Toe</h1>
+    <p class="header-subtitle">Play locally with friends or challenge the smart AI opponent</p>
+  </header>
+
+  <!-- Error Alert -->
+  @if (errorMessage()) {
+    <div class="alert-banner" id="error-banner" role="alert">
+      <span class="alert-icon">⚠️</span>
+      <span class="alert-text">{{ errorMessage() }}</span>
+      <button class="alert-retry" (click)="startNewGame(selectedMode())">Retry</button>
+    </div>
+  }
+
+  <!-- Mode Selector -->
+  <section class="mode-selector-wrapper" aria-label="Game Mode Selection">
+    <div class="mode-selector">
+      <button
+        id="mode-twoplayer-btn"
+        class="mode-btn"
+        [class.active]="selectedMode() === 'TwoPlayer'"
+        (click)="switchMode('TwoPlayer')"
+        [disabled]="isLoading()"
+      >
+        <span class="mode-icon">👥</span>
+        <span>Two Player Mode</span>
+      </button>
+
+      <button
+        id="mode-computer-btn"
+        class="mode-btn"
+        [class.active]="selectedMode() === 'Computer'"
+        (click)="switchMode('Computer')"
+        [disabled]="isLoading()"
+      >
+        <span class="mode-icon">🤖</span>
+        <span>Play Against Computer</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Status / Turn Banner -->
+  <section class="status-section" aria-live="polite">
+    <div
+      id="status-banner"
+      class="status-banner"
+      [class.status-win]="game()?.status === 'Won'"
+      [class.status-draw]="game()?.status === 'Draw'"
+      [class.turn-x]="game()?.status === 'InProgress' && game()?.currentPlayer === 'X'"
+      [class.turn-o]="game()?.status === 'InProgress' && game()?.currentPlayer === 'O'"
+    >
+      <div class="status-content">
+        @if (game()?.status === 'InProgress') {
+          <span
+            class="turn-badge"
+            [class.badge-x]="game()?.currentPlayer === 'X'"
+            [class.badge-o]="game()?.currentPlayer === 'O'"
+          >
+            {{ game()?.currentPlayer }}
+          </span>
+        }
+        <span id="turn-indicator" class="status-text">{{ turnMessage }}</span>
+      </div>
+      @if (isLoading()) {
+        <span class="spinner" aria-label="Processing move"></span>
+      }
+    </div>
+  </section>
+
+  <!-- Game Layout -->
+  <div class="game-layout">
+    <!-- Left Column: Board & Primary Actions -->
+    <section class="board-column" aria-label="Game Board Area">
+      <div class="board-card">
+        @if (game(); as g) {
+          <app-board
+            [board]="g.board"
+            [winningCells]="g.winningCells"
+            [disabled]="isLoading() || g.status !== 'InProgress'"
+            (cellClick)="onCellClick($event)"
+          ></app-board>
+        } @else {
+          <div class="board-placeholder">
+            <span class="spinner-large"></span>
+            <p>Initializing board...</p>
+          </div>
+        }
+      </div>
+
+      <!-- Action Controls -->
+      <div class="action-controls" aria-label="Game Controls">
+        <button
+          id="undo-btn"
+          class="btn btn-secondary"
+          (click)="undoMove()"
+          [disabled]="isLoading() || !game() || game()!.moveHistory.length === 0"
+          title="Undo the last move"
+        >
+          <span class="btn-icon">↩</span>
+          <span>Undo Last Move</span>
+        </button>
+
+        <button
+          id="reset-game-btn"
+          class="btn btn-primary"
+          (click)="resetGame()"
+          [disabled]="isLoading() || !game()"
+          title="Reset board for a new round"
+        >
+          <span class="btn-icon">🔄</span>
+          <span>Reset Game</span>
+        </button>
+
+        <button
+          id="reset-scoreboard-btn"
+          class="btn btn-danger-ghost"
+          (click)="resetScoreboard()"
+          [disabled]="isLoading() || !game()"
+          title="Clear all scoreboard win and draw stats"
+        >
+          <span class="btn-icon">🗑️</span>
+          <span>Reset Scoreboard</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Right Column: Scoreboard & History -->
+    <aside class="sidebar-column" aria-label="Scoreboard and Move History">
+      @if (game(); as g) {
+        <app-scoreboard [scoreboard]="g.scoreboard"></app-scoreboard>
+        <app-move-history [moves]="g.moveHistory"></app-move-history>
+      }
+    </aside>
+  </div>
+</main>
