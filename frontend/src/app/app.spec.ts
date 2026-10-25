@@ -159,4 +159,40 @@ describe('App', () => {
     app.returnToLiveGame();
     expect(app.isViewingArchived()).toBe(false);
   });
+
+  it('should not display "New Game" button while game is InProgress', () => {
+    app.game.set({
+      ...initialGame,
+      status: 'InProgress',
+    });
+    fixture.detectChanges();
+    const newGameBtn = (fixture.nativeElement as HTMLElement).querySelector('#new-game-btn');
+    expect(newGameBtn).toBeNull();
+  });
+
+  it('should display "New Game" button after game has concluded with a Win and start fresh game on click', () => {
+    app.game.set({
+      ...initialGame,
+      status: 'Won',
+      winner: 'X',
+    });
+    fixture.detectChanges();
+    const newGameBtn = (fixture.nativeElement as HTMLElement).querySelector('#new-game-btn') as HTMLButtonElement;
+    expect(newGameBtn).not.toBeNull();
+    expect(newGameBtn.textContent).toContain('New Game');
+
+    newGameBtn.click();
+    expect(mockGameService.createGame).toHaveBeenCalledWith('TwoPlayer');
+  });
+
+  it('should display "New Game" button after game has concluded with a Draw', () => {
+    app.game.set({
+      ...initialGame,
+      status: 'Draw',
+      winner: null,
+    });
+    fixture.detectChanges();
+    const newGameBtn = (fixture.nativeElement as HTMLElement).querySelector('#new-game-btn') as HTMLButtonElement;
+    expect(newGameBtn).not.toBeNull();
+  });
 });

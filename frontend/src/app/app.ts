@@ -99,6 +99,11 @@ export class App implements OnInit {
       });
   }
 
+  get isGameConcluded(): boolean {
+    const status = this.game()?.status;
+    return status === 'Won' || status === 'Draw';
+  }
+
   get isUndoDisabled(): boolean {
     const currentGame = this.game();
     if (!currentGame || this.isLoading() || currentGame.moveHistory.length === 0 || this.isViewingArchived()) {

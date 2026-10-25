@@ -68,6 +68,17 @@
             <span>◀ Back to Live Game</span>
           </button>
         }
+        @if (!isViewingArchived() && isGameConcluded) {
+          <button
+            id="banner-new-game-btn"
+            class="banner-action-btn"
+            (click)="startNewGame(selectedMode())"
+            [disabled]="isLoading()"
+            title="Start a fresh game session"
+          >
+            <span>✨ Play Again</span>
+          </button>
+        }
       </div>
       @if (isLoading()) {
         <span class="spinner" aria-label="Processing move"></span>
@@ -97,6 +108,19 @@
 
       <!-- Action Controls -->
       <div class="action-controls" aria-label="Game Controls">
+        @if (isGameConcluded) {
+          <button
+            id="new-game-btn"
+            class="btn btn-success"
+            (click)="startNewGame(selectedMode())"
+            [disabled]="isLoading()"
+            title="Start a fresh game session"
+          >
+            <span class="btn-icon">✨</span>
+            <span>New Game</span>
+          </button>
+        }
+
         <button
           id="undo-btn"
           class="btn btn-secondary"
