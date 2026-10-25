@@ -337,6 +337,43 @@ public class GameServiceTests : IDisposable
         result.Board[0][0].Should().Be("X");
         result.CurrentPlayer.Should().Be("O");
         result.MoveHistory.Should().HaveCount(1);
+        result.CanUndo.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task UndoMove_TwoPlayerMode_ConsecutiveUndo_ThrowsInvalidOperation()
+    {
+        var game = await _gameService.CreateGameAsync("TwoPlayer");
+        await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "X", Row = 0, Col = 0 });
+        await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "O", Row = 1, Col = 1 });
+
+        // First undo should succeed
+        await _gameService.UndoMoveAsync(game.Id);
+
+        // Immediate consecutive undo should be blocked so players cannot undo previous player's move
+        var act = () => _gameService.UndoMoveAsync(game.Id);
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*Consecutive undos*");
+    }
+
+    [Fact]
+    public async Task UndoMove_TwoPlayerMode_AllowsUndoAgainAfterNewMove()
+    {
+        var game = await _gameService.CreateGameAsync("TwoPlayer");
+        await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "X", Row = 0, Col = 0 });
+        await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "O", Row = 1, Col = 1 });
+
+        // First undo
+        await _gameService.UndoMoveAsync(game.Id);
+
+        // O makes another move
+        var afterMove = await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "O", Row = 2, Col = 2 });
+        afterMove.CanUndo.Should().BeTrue();
+
+        // Undo is allowed again for this new move
+        var afterSecondUndo = await _gameService.UndoMoveAsync(game.Id);
+        afterSecondUndo.Board[2][2].Should().Be("");
+        afterSecondUndo.CanUndo.Should().BeFalse();
     }
 
     [Fact]

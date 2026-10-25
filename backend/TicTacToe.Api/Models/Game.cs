@@ -35,6 +35,8 @@ public class Game
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public bool CanUndo { get; set; } = false;
+
     public List<Move> Moves { get; set; } = new();
 
     // Helper methods (not mapped to DB)

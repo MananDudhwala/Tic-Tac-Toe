@@ -106,14 +106,10 @@ export class App implements OnInit {
 
   get isUndoDisabled(): boolean {
     const currentGame = this.game();
-    if (!currentGame || this.isLoading() || currentGame.moveHistory.length === 0 || this.isViewingArchived()) {
+    if (!currentGame || this.isLoading() || this.isViewingArchived()) {
       return true;
     }
-    // Only allow undo after game completion in Computer mode
-    if (currentGame.status !== 'InProgress' && currentGame.gameMode !== 'Computer') {
-      return true;
-    }
-    return false;
+    return !currentGame.canUndo;
   }
 
   undoMove(): void {

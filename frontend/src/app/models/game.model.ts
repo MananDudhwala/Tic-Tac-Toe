@@ -8,6 +8,7 @@ export interface GameResponse {
   winningCells: number[][] | null;
   moveHistory: MoveResponse[];
   scoreboard: ScoreboardResponse;
+  canUndo: boolean;
 }
 
 export interface MoveResponse {

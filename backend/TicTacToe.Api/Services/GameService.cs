@@ -49,7 +49,8 @@ public class GameService : IGameService
             CurrentPlayer = "X",
             GameMode = gameMode,
             Status = "InProgress",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            CanUndo = false
         };
 
         _db.Games.Add(game);
@@ -87,6 +88,9 @@ public class GameService : IGameService
             }
         }
 
+        // A move was made; allow undo
+        game.CanUndo = true;
+
         await _db.SaveChangesAsync();
 
         // Update scoreboard if game just completed
@@ -107,6 +111,9 @@ public class GameService : IGameService
 
         if (game.Status != "InProgress" && game.GameMode != "Computer")
             throw new InvalidOperationException("Undo is not allowed after game completion in Two Player mode.");
+
+        if (game.GameMode == "TwoPlayer" && !game.CanUndo)
+            throw new InvalidOperationException("Consecutive undos are not allowed in Two Player mode.");
 
         // Track if we need to adjust scoreboard
         string? previousStatus = game.Status;
@@ -137,12 +144,15 @@ public class GameService : IGameService
                 // since computer moves right after, but handle edge case)
                 UndoSingleMove(game, lastMove);
             }
+
+            game.CanUndo = game.Moves.Any();
         }
         else
         {
-            // Two Player mode: undo only the last move
+            // Two Player mode: undo only the last move and disallow consecutive undos
             var lastMove = game.Moves.OrderByDescending(m => m.MoveNumber).First();
             UndoSingleMove(game, lastMove);
+            game.CanUndo = false;
         }
 
         // Recalculate game status
@@ -176,7 +186,8 @@ public class GameService : IGameService
                 CurrentPlayer = "X",
                 GameMode = game.GameMode,
                 Status = "InProgress",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                CanUndo = false
             };
             _db.Games.Add(freshGame);
             await _db.SaveChangesAsync();
@@ -188,6 +199,7 @@ public class GameService : IGameService
         game.Status = "InProgress";
         game.Winner = null;
         game.WinningCells = null;
+        game.CanUndo = false;
 
         // Remove all moves
         _db.Moves.RemoveRange(game.Moves);
@@ -409,7 +421,10 @@ public class GameService : IGameService
                     Col = m.Col
                 })
                 .ToList(),
-            Scoreboard = scoreboard
+            Scoreboard = scoreboard,
+            CanUndo = game.GameMode == "TwoPlayer"
+                ? (game.Status == "InProgress" && game.CanUndo && game.Moves.Any())
+                : (game.Moves.Any())
         };
     }
 }

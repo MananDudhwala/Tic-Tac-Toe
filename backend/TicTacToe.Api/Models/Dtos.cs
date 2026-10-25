@@ -23,6 +23,7 @@ public class GameResponse
     public int[][]? WinningCells { get; set; }
     public List<MoveResponse> MoveHistory { get; set; } = new();
     public ScoreboardResponse Scoreboard { get; set; } = new();
+    public bool CanUndo { get; set; }
 }
 
 public class MoveResponse

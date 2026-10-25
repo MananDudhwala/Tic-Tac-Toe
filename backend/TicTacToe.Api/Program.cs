@@ -41,6 +41,14 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<GameDbContext>();
     db.Database.EnsureCreated();
+    try
+    {
+        db.Database.ExecuteSqlRaw("ALTER TABLE Games ADD COLUMN CanUndo INTEGER NOT NULL DEFAULT 0;");
+    }
+    catch
+    {
+        // Column already exists
+    }
 }
 
 // Configure middleware

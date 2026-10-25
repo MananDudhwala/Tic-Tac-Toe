@@ -24,6 +24,7 @@ describe('App', () => {
     winningCells: null,
     moveHistory: [],
     scoreboard: { xWins: 0, oWins: 0, draws: 0 },
+    canUndo: false,
   };
 
   beforeEach(async () => {
@@ -87,9 +88,10 @@ describe('App', () => {
     expect(mockGameService.makeMove).toHaveBeenCalledWith('test-game-id', 'X', 0, 0);
   });
 
-  it('should trigger undoMove when undo is called', () => {
+  it('should trigger undoMove when undo is called and canUndo is true', () => {
     app.game.set({
       ...initialGame,
+      canUndo: true,
       moveHistory: [{ moveNumber: 1, player: 'X', row: 0, col: 0 }],
     });
     app.undoMove();
@@ -118,6 +120,7 @@ describe('App', () => {
       gameMode: 'TwoPlayer',
       status: 'Won',
       winner: 'X',
+      canUndo: false,
       moveHistory: [{ moveNumber: 1, player: 'X', row: 0, col: 0 }],
     });
     expect(app.isUndoDisabled).toBe(true);
@@ -126,12 +129,27 @@ describe('App', () => {
     expect(mockGameService.undoMove).not.toHaveBeenCalled();
   });
 
-  it('should allow undo after game completion in Computer mode', () => {
+  it('should disable undo on consecutive undo attempts in TwoPlayer mode', () => {
+    app.game.set({
+      ...initialGame,
+      gameMode: 'TwoPlayer',
+      status: 'InProgress',
+      canUndo: false,
+      moveHistory: [{ moveNumber: 1, player: 'X', row: 0, col: 0 }],
+    });
+    expect(app.isUndoDisabled).toBe(true);
+
+    app.undoMove();
+    expect(mockGameService.undoMove).not.toHaveBeenCalled();
+  });
+
+  it('should allow undo when canUndo is true', () => {
     app.game.set({
       ...initialGame,
       gameMode: 'Computer',
       status: 'Won',
       winner: 'X',
+      canUndo: true,
       moveHistory: [
         { moveNumber: 1, player: 'X', row: 0, col: 0 },
         { moveNumber: 2, player: 'O', row: 1, col: 1 },

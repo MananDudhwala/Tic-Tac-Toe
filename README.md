@@ -58,8 +58,10 @@ The database uses EF Core with SQLite:
 - **`Moves` table**: Relational child table with `MoveNumber`, `Player`, `Row`, `Col`, and foreign key `GameId` (cascade delete).
 - **`Scoreboards` table**: Singleton record (`Id = 1`) tracking `XWins`, `OWins`, and `Draws`.
 
-### 3. Undo Strategy: Mode-Specific Completion Rules
-- **Two Player Mode (Option A after completion)**: Once a game is won or drawn in Two Player mode, Undo is disabled. The result is final and the scoreboard remains unchanged.
+### 3. Undo Strategy: Mode-Specific Completion & Fair-Play Rules
+- **Two Player Mode (Single Undo Only & Locked on Finish)**:
+  - Only **one undo** is permitted per move. Consecutive undos are strictly blocked to prevent a player from undoing the other player's prior turn. Once an undo is performed, the button is disabled until a new move is played.
+  - Once a game is won or drawn in Two Player mode, Undo is completely disabled (Option A). The result is final and the scoreboard remains unchanged.
 - **Computer Mode (Option B after completion)**: In Computer Mode, Undo is allowed even after game completion. If the user undos, both the computer's last move and the player's winning/finishing move are reverted, the game status returns to `InProgress`, and the scoreboard count is automatically decremented.
 
 ### 4. Computer Move Mechanics
@@ -98,9 +100,9 @@ When in Computer Mode:
    - Smooth entry animations as moves are registered.
 
 6. **Smart Undo Last Move**
-   - **Two Player Mode**: Reverts the single most recent move and restores the previous player's turn.
+   - **Two Player Mode**: Reverts the single most recent move and restores the previous player's turn. Strictly allows only **one undo** at a time—consecutive undos are locked until a new move is made to prevent undoing the other player's turn.
    - **Computer Mode**: Reverts both the computer's move and the user's preceding move together, giving the human their turn back immediately.
-   - Disabled when no moves exist to undo.
+   - Disabled when no moves exist to undo or when consecutive undos are attempted in Two Player mode.
 
 7. **Reset Game**
    - Clears board and move history.
