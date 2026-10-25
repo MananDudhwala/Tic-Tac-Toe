@@ -305,6 +305,23 @@ public class GameServiceTests : IDisposable
         scoreAfter.XWins.Should().Be(1);
     }
 
+    [Fact]
+    public async Task ResetGame_AfterWin_PreservesCompletedGameInPastGames()
+    {
+        var game = await _gameService.CreateGameAsync("TwoPlayer");
+        // X wins
+        await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "X", Row = 0, Col = 0 });
+        await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "O", Row = 1, Col = 0 });
+        await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "X", Row = 0, Col = 1 });
+        await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "O", Row = 1, Col = 1 });
+        await _gameService.MakeMoveAsync(game.Id, new MoveRequest { Player = "X", Row = 0, Col = 2 });
+
+        await _gameService.ResetGameAsync(game.Id);
+
+        var pastGames = await _gameService.GetPastGamesAsync();
+        pastGames.Should().Contain(g => g.Id == game.Id && g.Status == "Won" && g.Winner == "X" && g.MoveCount == 5);
+    }
+
     // --- Undo in Two Player Mode ---
 
     [Fact]
@@ -578,14 +595,17 @@ public class GameServiceTests : IDisposable
     [Fact]
     public async Task GetPastGames_ReturnsCreatedGamesList()
     {
-        await _gameService.CreateGameAsync("TwoPlayer");
-        await _gameService.CreateGameAsync("Computer");
+        var game1 = await _gameService.CreateGameAsync("TwoPlayer");
+        await _gameService.MakeMoveAsync(game1.Id, new MoveRequest { Player = "X", Row = 0, Col = 0 });
+
+        var game2 = await _gameService.CreateGameAsync("Computer");
+        await _gameService.MakeMoveAsync(game2.Id, new MoveRequest { Player = "X", Row = 0, Col = 0 });
 
         var pastGames = await _gameService.GetPastGamesAsync();
 
         pastGames.Should().NotBeNull();
         pastGames.Count.Should().BeGreaterOrEqualTo(2);
-        pastGames.Should().Contain(g => g.GameMode == "TwoPlayer");
-        pastGames.Should().Contain(g => g.GameMode == "Computer");
+        pastGames.Should().Contain(g => g.GameMode == "TwoPlayer" && g.MoveCount > 0);
+        pastGames.Should().Contain(g => g.GameMode == "Computer" && g.MoveCount > 0);
     }
 }

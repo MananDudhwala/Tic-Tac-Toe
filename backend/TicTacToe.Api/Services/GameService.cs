@@ -33,6 +33,15 @@ public class GameService : IGameService
         if (gameMode != "TwoPlayer" && gameMode != "Computer")
             throw new ArgumentException("GameMode must be 'TwoPlayer' or 'Computer'.");
 
+        // Clean up unplayed abandoned sessions so they don't clutter match history
+        var abandoned = await _db.Games
+            .Where(g => g.Status == "InProgress" && !g.Moves.Any())
+            .ToListAsync();
+        if (abandoned.Any())
+        {
+            _db.Games.RemoveRange(abandoned);
+        }
+
         var game = new Game
         {
             Id = Guid.NewGuid(),
@@ -157,6 +166,23 @@ public class GameService : IGameService
     {
         var game = await LoadGameAsync(gameId);
 
+        // If game is completed, preserve the finished match in SQLite and start a fresh session
+        if (game.Status != "InProgress")
+        {
+            var freshGame = new Game
+            {
+                Id = Guid.NewGuid(),
+                Board = "---------",
+                CurrentPlayer = "X",
+                GameMode = game.GameMode,
+                Status = "InProgress",
+                CreatedAt = DateTime.UtcNow
+            };
+            _db.Games.Add(freshGame);
+            await _db.SaveChangesAsync();
+            return await BuildResponseAsync(freshGame);
+        }
+
         game.Board = "---------";
         game.CurrentPlayer = "X";
         game.Status = "InProgress";
@@ -176,6 +202,7 @@ public class GameService : IGameService
     {
         return await _db.Games
             .Include(g => g.Moves)
+            .Where(g => g.Moves.Any() || g.Status != "InProgress")
             .OrderByDescending(g => g.CreatedAt)
             .Take(30)
             .Select(g => new GameSummaryResponse

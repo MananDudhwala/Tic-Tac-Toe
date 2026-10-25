@@ -146,6 +146,7 @@ export class App implements OnInit {
     this.gameService.resetGame(this.activeLiveGameId() || currentGame.id).subscribe({
       next: (updatedGame) => {
         this.game.set(updatedGame);
+        this.activeLiveGameId.set(updatedGame.id);
         this.isLoading.set(false);
         this.loadPastGames();
       },
