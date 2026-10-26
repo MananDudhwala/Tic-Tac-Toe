@@ -57,7 +57,7 @@ To prevent desynchronization, client-side cheating, or rule discrepancies, all s
 #### Database Storage Schema
 The database uses Entity Framework Core with SQLite (`tictactoe.db`):
 
-![Database Storage Schema](./storage%20schema.png)
+![Database Storage Schema](./Schema.png)
 
 * **`Game` Entity (Primary Table)**: Stores unique match sessions (`Id` as GUID), board state as a compact 9-character string (`"---------"`), current player, game status (`InProgress`, `Won`, `Draw`), winner, winning cell indices, creation timestamp, and the undo eligibility flag.
 * **`Move` Entity (Child Table)**: Maintains a strict 1-to-many relationship with `Game` via foreign key `GameId` with **Cascade Delete**. Records chronological move order (`MoveNumber`), player mark (`X`/`O`), and coordinate placement (`Row`, `Col`).
