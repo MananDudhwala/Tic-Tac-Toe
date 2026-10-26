@@ -306,6 +306,9 @@ The computer player (`O`) selects moves using the priority rules outlined in the
 ### 2. 📊 Scoreboard & State Persistence
 - **Global Singleton Scoreboard**:
   - The scoreboard is stored as a single global row (`Id = 1`) in SQLite. It aggregates wins and draws across **both** Two-Player and Computer modes together rather than tracking separate tallies per game mode.
+- **Thundering Herd & Row-Level Lock Contention**:
+  - Because `Scoreboards` relies on a singleton record (`Id = 1`), every concurrently completed match contends for a write lock on the exact same database row to increment `xWins`, `oWins`, or `draws`. Under high concurrent load, this creates a classic hot-spot bottleneck and thundering herd problem where transactions queue behind row/table locks.
+  - *Production Mitigation*: Decouple writes via an event-driven architecture (publish a `GameCompletedEvent` to Kafka/RabbitMQ for asynchronous batched aggregation), utilize atomic in-memory counters (e.g., Redis `HINCRBY scoreboard xWins 1`), or partition the counter across $N$ rows and compute `SUM()` on read.
 - **Scoreboard Reset Scope vs. Past Games**:
   - Clicking **Reset Scoreboard** resets the numeric counters (`xWins: 0, oWins: 0, draws: 0`), but **does not delete past match history** from the `Games` table. The "Past Games" list continues to display previously finished games.
 - **Denormalized Counters**:
@@ -324,8 +327,10 @@ The computer player (`O`) selects moves using the priority rules outlined in the
 ### 4. ⚙️ Architecture & Concurrency
 - **Database Scalability (SQLite)**:
   - Uses a local SQLite file (`tictactoe.db`). While fast and zero-configuration for local use, SQLite utilizes database-level write locks and cannot horizontally scale across multiple containerized backend instances without switching to a client-server RDBMS (e.g., PostgreSQL or SQL Server).
-- **Optimistic Concurrency**:
-  - The `Games` table lacks a `RowVersion` / concurrency token, meaning rapid concurrent move submissions for the same game session could encounter race conditions.
+- **Move Race Conditions & Lost Updates (Lack of OCC)**:
+  - The `Games` entity currently lacks an explicit concurrency token (such as an EF Core `[Timestamp]` / `RowVersion` byte array or a version column with `[ConcurrencyCheck]`).
+  - *The Failure Mode*: If two requests arrive at the exact same millisecond (e.g., both players submit moves concurrently or a client rapidly double-clicks), both threads read the same board state simultaneously (`Board = "---------"`). Thread 1 writes its move, and Thread 2 immediately overwrites it without awareness that the board changed, causing a **Lost Update** anomaly and corrupting turn sequencing.
+  - *Production Mitigation*: Implement **Optimistic Concurrency Control (OCC)**. EF Core appends `WHERE Id = @Id AND Version = @OriginalVersion` to the generated `UPDATE` statement. If another thread commits first, the database affects 0 rows, prompting EF Core to throw `DbUpdateConcurrencyException`. The API catches this and returns an **HTTP 409 Conflict** with the freshest game state, allowing the client to reconcile and re-prompt the user.
 
 ### 5. 🎨 UI, UX & Accessibility
 - **Keyboard Board Navigation**:
