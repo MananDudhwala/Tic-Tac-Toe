@@ -52,11 +52,26 @@ This solution demonstrates pair programming and full-stack software engineering 
 ### 1. Backend as Single Source of Truth
 To prevent desynchronization, client-side cheating, or rule discrepancies, all state transitions (move validation, win/draw checking, computer moves, and undo operations) are executed synchronously on the backend. The frontend sends user intents (`POST /moves`, `POST /undo`, `POST /reset`) and renders the returned `GameResponse`.
 
-### 2. SQLite Database Schema
-The database uses EF Core with SQLite:
-- **`Games` table**: Stores `Id` (GUID), `Board` (9-char string `"---------"` representing rows 0-2 and cols 0-2), `CurrentPlayer`, `GameMode`, `Status` (`InProgress`, `Won`, `Draw`), `Winner`, `WinningCells`, and `CreatedAt`.
-- **`Moves` table**: Relational child table with `MoveNumber`, `Player`, `Row`, `Col`, and foreign key `GameId` (cascade delete).
-- **`Scoreboards` table**: Singleton record (`Id = 1`) tracking `XWins`, `OWins`, and `Draws`.
+### 2. Data Modeling & Storage Architecture
+
+#### Database Storage Schema
+The database uses Entity Framework Core with SQLite (`tictactoe.db`):
+
+![Database Storage Schema](./storage%20schema.png)
+
+* **`Game` Entity (Primary Table)**: Stores unique match sessions (`Id` as GUID), board state as a compact 9-character string (`"---------"`), current player, game status (`InProgress`, `Won`, `Draw`), winner, winning cell indices, creation timestamp, and the undo eligibility flag.
+* **`Move` Entity (Child Table)**: Maintains a strict 1-to-many relationship with `Game` via foreign key `GameId` with **Cascade Delete**. Records chronological move order (`MoveNumber`), player mark (`X`/`O`), and coordinate placement (`Row`, `Col`).
+* **`Scoreboard` Entity (Singleton Table)**: A dedicated single-row entity (`Id = 1`) tracking global session tallies (`XWins`, `OWins`, `Draws`), seeded on startup and decoupled from individual game records.
+
+---
+
+#### Entity & DTO Mapping Architecture
+To keep database concerns decoupled from API presentation, EF Core entities are projected into client-facing Data Transfer Objects (DTOs):
+
+![Entity & DTO Architecture](./ER.png)
+
+* **`GameResponse` (Aggregated State)**: Combines the `Game` entity (transforming the 9-char string board into a 3x3 array and comma-separated winning indices into coordinate pairs), an embedded list of `MoveResponse` objects, and the current `ScoreboardResponse` in a single atomic payload.
+* **`GameSummaryResponse` (History Projection)**: A lightweight DTO used by the Past Games drawer containing match metadata (`GameMode`, `Status`, `Winner`, `MoveCount`, `CreatedAt`) without payload overhead.
 
 ### 3. Undo Strategy: Mode-Specific Completion & Fair-Play Rules
 - **Two Player Mode (Single Undo Only & Locked on Finish)**:
