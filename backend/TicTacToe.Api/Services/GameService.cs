@@ -34,12 +34,15 @@ public class GameService : IGameService
             throw new ArgumentException("GameMode must be 'TwoPlayer' or 'Computer'.");
 
         // Clean up unplayed abandoned sessions so they don't clutter match history
-        var abandoned = await _db.Games
-            .Where(g => g.Status == "InProgress" && !g.Moves.Any())
-            .ToListAsync();
-        if (abandoned.Any())
+        try
         {
-            _db.Games.RemoveRange(abandoned);
+            await _db.Games
+                .Where(g => g.Status == "InProgress" && !g.Moves.Any())
+                .ExecuteDeleteAsync();
+        }
+        catch
+        {
+            // Non-fatal if cleanup encounters an ephemeral lock or already deleted rows
         }
 
         var game = new Game
